@@ -52,7 +52,7 @@ final class DownloadFileParser {
                   (String) checkNotNull(yaml.get(Tags.description.toString()));
               final String mapName = (String) checkNotNull(yaml.get(Tags.mapName.toString()));
 
-              final Integer version = (Integer) yaml.get(Tags.version.toString());
+              final Integer version = (Integer) checkNotNull(yaml.get(Tags.version.toString()));
               final DownloadFileDescription.DownloadType downloadType =
                   optEnum(
                       yaml,

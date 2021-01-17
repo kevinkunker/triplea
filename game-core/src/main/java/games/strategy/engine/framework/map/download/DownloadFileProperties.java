@@ -10,9 +10,7 @@ import java.util.Optional;
 import java.util.Properties;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.triplea.util.Version;
 
-/** Properties file used to know which map versions have been installed. */
 @Slf4j
 @NoArgsConstructor
 public class DownloadFileProperties {
@@ -23,7 +21,7 @@ public class DownloadFileProperties {
     props.put(VERSION_PROPERTY, String.valueOf(mapVersion));
   }
 
-  static DownloadFileProperties loadForZip(final File zipFile) {
+  public static DownloadFileProperties loadForZip(final File zipFile) {
     return fromZip(zipFile).exists()
         ? loadForZipPropertyFile(fromZip(zipFile))
         : new DownloadFileProperties();
@@ -33,7 +31,7 @@ public class DownloadFileProperties {
     final DownloadFileProperties downloadFileProperties = new DownloadFileProperties();
     try (InputStream fis = new FileInputStream(propertyFile)) {
       downloadFileProperties.props.load(fis);
-    } catch (final IOException e) {
+    } catch (final IllegalArgumentException | IOException e) {
       log.error("Failed to read property file: " + propertyFile.getAbsolutePath(), e);
     }
     return downloadFileProperties;
@@ -42,7 +40,7 @@ public class DownloadFileProperties {
   void saveForZip(final File zipFile) {
     try (OutputStream fos = new FileOutputStream(fromZip(zipFile))) {
       props.store(fos, null);
-    } catch (final IllegalArgumentException | IOException e) {
+    } catch (final IOException e) {
       log.error("Failed to write property file to: " + fromZip(zipFile).getAbsolutePath(), e);
     }
   }
@@ -51,9 +49,7 @@ public class DownloadFileProperties {
     return new File(zipFile.getAbsolutePath() + ".properties");
   }
 
-  public Optional<Integer> getVersion() {
-    return Optional.ofNullable(props.getProperty(VERSION_PROPERTY))
-        .map(Version::new)
-        .map(Version::getMajor);
+  public Optional<String> getVersion() {
+    return Optional.ofNullable(props.getProperty(VERSION_PROPERTY));
   }
 }

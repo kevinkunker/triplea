@@ -3,6 +3,7 @@ package games.strategy.engine.framework.map.download;
 import static java.util.function.Predicate.not;
 
 import com.google.common.annotations.VisibleForTesting;
+import games.strategy.engine.framework.map.file.system.loader.AvailableMapsIndex;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -16,21 +17,19 @@ class MapDownloadList {
   private final List<DownloadFileDescription> outOfDate = new ArrayList<>();
 
   MapDownloadList(final Collection<DownloadFileDescription> downloads) {
-    this(downloads, new FileSystemAccessStrategy());
+    this(downloads, new AvailableMapsIndex());
   }
 
   @VisibleForTesting
   MapDownloadList(
       final Collection<DownloadFileDescription> downloads,
-      final FileSystemAccessStrategy strategy) {
+      final AvailableMapsIndex availableMapsIndex) {
     for (final DownloadFileDescription download : downloads) {
       if (download == null) {
         return;
       }
-
-      // note, getParentFile assumes that the folder returned by 'findPathToMapFolder'
-      // is always one folder deep into the map folder (eg: map-name/map)
-      final Optional<Integer> mapVersion = strategy.getMapVersion(download.getMapName());
+      final Optional<Integer> mapVersion =
+          availableMapsIndex.getMapVersionByName(download.getMapName());
 
       if (mapVersion.isPresent()) {
         installed.add(download);

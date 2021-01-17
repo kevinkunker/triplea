@@ -1,6 +1,7 @@
 package games.strategy.engine.framework.map.download;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.primitives.Ints;
 import games.strategy.engine.ClientFileSystemHelper;
 import java.io.File;
 import java.util.Arrays;
@@ -9,8 +10,6 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.triplea.http.client.maps.listing.MapDownloadListing;
-import org.triplea.http.client.maps.listing.MapSkinListing;
-import org.triplea.util.Version;
 
 /**
  * This class represents the essential data for downloading a TripleA map. Where to get it, where to
@@ -69,23 +68,10 @@ public final class DownloadFileDescription {
         .url(mapDownloadListing.getUrl())
         .description(mapDownloadListing.getDescription())
         .mapName(mapDownloadListing.getMapName())
-        .version(new Version(mapDownloadListing.getVersion()).getMajor())
+        .version(Ints.tryParse(mapDownloadListing.getVersion()))
         .downloadType(DownloadType.MAP)
         .mapCategory(MapCategory.fromString(mapDownloadListing.getMapCategory()))
         .img(mapDownloadListing.getPreviewImage())
-        .build();
-  }
-
-  public static DownloadFileDescription ofMapSkinListing(
-      final MapSkinListing skin, final String mapCategory) {
-    return DownloadFileDescription.builder()
-        .url(skin.getUrl())
-        .description(skin.getDescription())
-        .mapName(skin.getSkinName())
-        .version(new Version(skin.getVersion()).getMajor())
-        .downloadType(DownloadType.MAP_SKIN)
-        .mapCategory(MapCategory.fromString(mapCategory))
-        .img(skin.getPreviewImageUrl())
         .build();
   }
 

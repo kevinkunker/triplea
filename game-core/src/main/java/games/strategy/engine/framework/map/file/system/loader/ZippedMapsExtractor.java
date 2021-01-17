@@ -11,7 +11,7 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import lombok.Builder;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.triplea.io.FileUtils;
 import org.triplea.io.ZipExtractor;
@@ -22,29 +22,21 @@ import org.triplea.io.ZipExtractor.ZipReadException;
  * Responsible to find downloaded maps and unzip any that are zipped. Any 'bad' map zips that we
  * fail to unzip will be moved into a bad-zip folder.
  */
-@Builder
+@UtilityClass
 @Slf4j
 public class ZippedMapsExtractor {
   private static final String ZIP_EXTENSION = ".zip";
 
   /**
-   * Callback to be invoked if we find any zip files. The task passed to the progress indicator will
-   * be the unzip task.
+   * Finds all map zips, if any are found, invokes the progress indicator and beings to extract each
+   * map zip and removes the original zip.
    */
-  private final Consumer<Runnable> progressIndicator;
-
-  /** Path to where downloaded maps can be found. */
-  private final Path downloadedMapsFolder;
-
-  /**
-   * Finds all map zips, extracts them and then removes the original zip. If any zipped files are
-   * found, then the progressIndicator is invoked with a callback that will execute the unzip task.
-   */
-  public void unzipMapFiles() {
+  public static void unzipMapFiles(final Consumer<Runnable> progressIndicator) {
     final Collection<File> zippedMaps = findAllZippedMapFiles();
     if (zippedMaps.isEmpty()) {
       return;
     }
+
     progressIndicator.accept(
         () ->
             zippedMaps.forEach(
@@ -74,8 +66,8 @@ public class ZippedMapsExtractor {
                 }));
   }
 
-  private Collection<File> findAllZippedMapFiles() {
-    return FileUtils.listFiles(downloadedMapsFolder.toFile()).stream()
+  private static Collection<File> findAllZippedMapFiles() {
+    return FileUtils.listFiles(ClientFileSystemHelper.getUserMapsFolder()).stream()
         .filter(File::isFile)
         .filter(file -> file.getName().toLowerCase().endsWith(ZIP_EXTENSION))
         .collect(Collectors.toList());
@@ -160,8 +152,9 @@ public class ZippedMapsExtractor {
    * @return Returns the new location of the file, returns an empty if the file move operation
    *     failed.
    */
-  private Optional<Path> moveBadZip(final File mapZip) {
-    final Path badZipFolder = downloadedMapsFolder.resolve("bad-zips");
+  private static Optional<Path> moveBadZip(final File mapZip) {
+    final Path badZipFolder =
+        ClientFileSystemHelper.getUserMapsFolder().toPath().resolve("bad-zips");
     if (!badZipFolder.toFile().mkdirs()) {
       log.error(
           "Unable to create folder: "

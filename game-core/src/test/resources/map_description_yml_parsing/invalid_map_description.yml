@@ -1,0 +1,6 @@
+map_name:
+map_version: 10.0
+games:
+  - game_name:
+      new_node: this is wrong structure
+    xml_game_file:

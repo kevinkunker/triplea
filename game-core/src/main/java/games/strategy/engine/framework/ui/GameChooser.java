@@ -1,7 +1,7 @@
 package games.strategy.engine.framework.ui;
 
 import games.strategy.engine.data.gameparser.ShallowGameParser;
-import games.strategy.engine.framework.map.file.system.loader.DownloadedMaps;
+import games.strategy.engine.framework.map.file.system.loader.AvailableMapsIndex;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -53,23 +53,23 @@ public class GameChooser {
    */
   public static void chooseGame(
       final Frame owner,
-      final DownloadedMaps downloadedMaps,
+      final AvailableMapsIndex availableMapsIndex,
       final String gameName,
       final Consumer<URI> gameChosenCallback) {
 
     final JDialog dialog = new JDialog(owner, "Select a Game", true);
     dialog.setLayout(new BorderLayout());
 
-    final DefaultListModel<DefaultGameChooserEntry> gameChooserModel = new DefaultListModel<>();
-    downloadedMaps.getSortedGameEntries().forEach(gameChooserModel::addElement);
+    final DefaultListModel<String> gameChooserModel = new DefaultListModel<>();
+    availableMapsIndex.getSortedGameList().forEach(gameChooserModel::addElement);
 
-    final JList<DefaultGameChooserEntry> gameList = new JList<>(gameChooserModel);
+    final JList<String> gameList = new JList<>(gameChooserModel);
     if (gameName == null || gameName.equals("-")) {
       gameList.setSelectedIndex(0);
     } else {
       IntStream.range(0, gameChooserModel.size())
           .mapToObj(gameChooserModel::get)
-          .filter(entry -> entry.getGameName().equals(gameName))
+          .filter(gameName::equals)
           .findAny()
           .ifPresent(entry -> gameList.setSelectedValue(entry, true));
     }
@@ -116,7 +116,10 @@ public class GameChooser {
     notesPanel.setContentType("text/html");
     notesPanel.setForeground(Color.BLACK);
 
-    notesPanel.setText(GameChooser.buildGameNotesText(gameList.getSelectedValue().getUri()));
+    availableMapsIndex
+        .findGameUriByName(gameList.getSelectedValue())
+        .map(GameChooser::buildGameNotesText)
+        .ifPresent(notesPanel::setText);
 
     final JPanel infoPanel = new JPanel();
     infoPanel.setLayout(new BorderLayout());
@@ -147,8 +150,10 @@ public class GameChooser {
     gameList.addListSelectionListener(
         e -> {
           if (!e.getValueIsAdjusting()) {
-            notesPanel.setText(
-                GameChooser.buildGameNotesText(gameList.getSelectedValue().getUri()));
+            availableMapsIndex
+                .findGameUriByName(gameList.getSelectedValue())
+                .map(GameChooser::buildGameNotesText)
+                .ifPresent(notesPanel::setText);
             // scroll to the top of the notes screen
             SwingUtilities.invokeLater(
                 () -> notesPanel.scrollRectToVisible(new Rectangle(0, 0, 0, 0)));
@@ -172,7 +177,7 @@ public class GameChooser {
     dialog.setVisible(true); // Blocking and waits for user action
 
     Optional.ofNullable(gameList.getSelectedValue())
-        .map(DefaultGameChooserEntry::getUri)
+        .flatMap(availableMapsIndex::findGameUriByName)
         .ifPresent(gameChosenCallback);
   }
 

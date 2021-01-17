@@ -1,20 +1,16 @@
 package games.strategy.engine.auto.update;
 
 import com.google.common.annotations.VisibleForTesting;
-import games.strategy.engine.ClientFileSystemHelper;
 import games.strategy.engine.framework.map.download.DownloadFileDescription;
-import games.strategy.engine.framework.map.download.DownloadFileProperties;
 import games.strategy.engine.framework.map.download.DownloadMapsWindow;
+import games.strategy.engine.framework.map.file.system.loader.AvailableMapsIndex;
 import games.strategy.engine.framework.map.listing.MapListingFetcher;
 import games.strategy.triplea.settings.ClientSetting;
-import java.io.File;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -58,8 +54,9 @@ class UpdatedMapsCheck {
       return;
     }
 
-    // {property file name -> version}
-    final Map<String, Integer> installedMapVersions = readMapPropertyFilesForInstalledMapVersions();
+    // {map name -> version}
+    final Map<String, Integer> installedMapVersions =
+        new AvailableMapsIndex().getMapNamesToVersions();
 
     final Collection<String> outOfDateMapNames =
         computeOutOfDateMaps(installedMapVersions, availableToDownloadMapVersions);
@@ -67,32 +64,6 @@ class UpdatedMapsCheck {
     if (!outOfDateMapNames.isEmpty()) {
       promptUserToUpdateMaps(outOfDateMapNames);
     }
-  }
-
-  private static Map<String, Integer> readMapPropertyFilesForInstalledMapVersions() {
-    return
-    // get all .property files in the downloads folder
-    Arrays.stream(ClientFileSystemHelper.getUserMapsFolder().listFiles())
-        .filter(file -> file.getName().endsWith(".zip.properties"))
-        // Read each property file to find map version
-        // Create map of {property file name -> optional<version>}
-        .collect(Collectors.toMap(File::getName, UpdatedMapsCheck::readVersionFromPropertyFile))
-        // loop back over the map
-        .entrySet()
-        .stream()
-        // Keep only entries that have a version (optional is present)
-        .filter(entry -> entry.getValue().isPresent())
-        // Now that all optionals are guaranteed to hold a value, unwrap them &
-        // normalize the map names.
-        // Convert from:
-        //     {property file name -> Optional<Version>}
-        //    to:
-        //     {property file name -> Version}
-        .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().get()));
-  }
-
-  private static Optional<Integer> readVersionFromPropertyFile(final File propertyFile) {
-    return DownloadFileProperties.loadForZipPropertyFile(propertyFile).getVersion();
   }
 
   private static Map<String, Integer> downloadAvailableMapsListAndComputeAvailableVersions() {

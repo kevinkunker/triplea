@@ -1,5 +1,6 @@
 package games.strategy.engine.framework.map.file.system.loader;
 
+import com.google.common.annotations.VisibleForTesting;
 import games.strategy.engine.ClientFileSystemHelper;
 import games.strategy.engine.framework.map.description.MapDescriptionYaml;
 import java.io.File;
@@ -13,25 +14,13 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.triplea.io.FileUtils;
 
-/**
- * Data structure for the list of available games, games that a player has downloaded or installed
- * onto their hard drive.
- */
-@AllArgsConstructor
-public class DownloadedMaps {
-
+/** Reads the full set of map descriptions across all downloaded maps. */
+@AllArgsConstructor(onConstructor_ = @VisibleForTesting)
+public class AvailableMapsIndex {
   // description yaml contents -> map zip or map folder URI (containing the YAML)
   private final Map<MapDescriptionYaml, URI> mapYamlToMapLocation;
 
-  /**
-   * Reads the downloaded maps folder contents, parses those contents to find available games, and
-   * returns the list of available games found.
-   */
-  public static synchronized DownloadedMaps parseMapFiles() {
-    return new DownloadedMaps();
-  }
-
-  private DownloadedMaps() {
+  public AvailableMapsIndex() {
     this(computeMapYamlToMapLocation());
   }
 
@@ -55,6 +44,11 @@ public class DownloadedMaps {
         .map(MapDescriptionYaml.MapGame::getGameName)
         .sorted()
         .collect(Collectors.toList());
+  }
+
+  // TODO: test-me
+  public boolean hasGame(final String gameName) {
+    return findGameUriByName(gameName).isPresent();
   }
 
   /**
@@ -88,19 +82,5 @@ public class DownloadedMaps {
         .filter(yaml -> yaml.getMapName().equals(mapName))
         .findAny()
         .map(MapDescriptionYaml::getMapVersion);
-  }
-
-  /**
-   * Finds the 'root' of a map folder containing map content files. This will typically be a folder
-   * called something like "downloadedMaps/mapName/map". Returns empty if no map with the given name
-   * is found.
-   */
-  public static Optional<File> findPathToMapFolder(final String mapName) {
-    return FileSystemMapFinder.getPath(mapName);
-  }
-
-  // TODO: test-me
-  public boolean hasGame(final String gameName) {
-    return findGameUriByName(gameName).isPresent();
   }
 }

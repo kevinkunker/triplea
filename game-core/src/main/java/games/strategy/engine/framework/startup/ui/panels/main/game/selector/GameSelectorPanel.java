@@ -8,7 +8,7 @@ import games.strategy.engine.data.properties.IEditableProperty;
 import games.strategy.engine.data.properties.PropertiesUi;
 import games.strategy.engine.framework.HeadlessAutoSaveType;
 import games.strategy.engine.framework.map.download.DownloadMapsWindow;
-import games.strategy.engine.framework.map.file.system.loader.DownloadedMaps;
+import games.strategy.engine.framework.map.file.system.loader.AvailableMapsIndex;
 import games.strategy.engine.framework.startup.mc.ClientModel;
 import games.strategy.engine.framework.startup.ui.FileBackedGamePropertiesCache;
 import games.strategy.engine.framework.startup.ui.IGamePropertiesCache;
@@ -316,11 +316,14 @@ public final class GameSelectorPanel extends JPanel implements Observer {
           loadSavedGame.setEnabled(canSelectGameData || canChangeHostBotGameData);
           loadNewGame.setEnabled(canSelectGameData || canChangeHostBotGameData);
           // Disable game options if there are none.
-          mapOptions.setEnabled(
-              canChangeHostBotGameData
-                  || (canSelectGameData
-                      && model.getGameData() != null
-                      && !model.getGameData().getProperties().getEditableProperties().isEmpty()));
+          if (canChangeHostBotGameData
+              || (canSelectGameData
+                  && model.getGameData() != null
+                  && !model.getGameData().getProperties().getEditableProperties().isEmpty())) {
+            mapOptions.setEnabled(true);
+          } else {
+            mapOptions.setEnabled(false);
+          }
         });
   }
 
@@ -378,13 +381,13 @@ public final class GameSelectorPanel extends JPanel implements Observer {
 
   private void selectGameFile() {
     try {
-      final DownloadedMaps downloadedMaps =
+      final AvailableMapsIndex availableMapsIndex =
           BackgroundTaskRunner.runInBackgroundAndReturn(
-              "Loading all available games...", DownloadedMaps::parseMapFiles);
+              "Loading all available games...", AvailableMapsIndex::new);
 
       GameChooser.chooseGame(
           JOptionPane.getFrameForComponent(this),
-          downloadedMaps,
+          availableMapsIndex,
           model.getGameName(),
           this::gameSelected);
     } catch (final InterruptedException e) {
